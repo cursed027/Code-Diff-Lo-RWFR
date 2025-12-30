@@ -61,8 +61,9 @@ class InferenceLoop:
             f"load pretrained stable diffusion, "
             f"unused weights: {unused}, missing weights: {missing}"
         )
+        
         # load controlnet weight
-        if self.args.version == "v1":
+        if self.args.version == "v1": 
             if self.args.task == "face":
                 control_weight = load_model_from_url(MODELS["v1_face"])
             elif self.args.task == "sr" or self.args.task == "denoise":
@@ -93,7 +94,10 @@ class InferenceLoop:
             lora_sd = torch.load(self.args.lora_path, map_location="cpu")
             self.cldm.load_lora(lora_sd)
             
-        print(f"load controlnet+LoRA weight")
+        print("Loaded ControlNet weights")
+        if self.args.lora_path:
+            print("Loaded LoRA weights")
+
         self.cldm.eval().to(self.args.device)
         cast_type = {
             "fp32": torch.float32,
