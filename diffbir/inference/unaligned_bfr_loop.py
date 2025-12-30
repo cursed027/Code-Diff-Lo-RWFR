@@ -1,6 +1,6 @@
 import os
 from typing import Generator, List
-
+import torch
 import numpy as np
 from PIL import Image
 from omegaconf import OmegaConf
@@ -12,7 +12,7 @@ from ..utils.common import (
     load_model_from_url,
     trace_vram_usage,
 )
-from ..utils.face import FaceRestoreHelper
+from ..utils.face import FaceRestoreHelper as DiffBIRFaceHelper
 from ..pipeline import (
     BSRNetPipeline,
     SwinIRPipeline,
@@ -21,7 +21,7 @@ from ..model import RRDBNet, SwinIR
 
 #Import CodeFormer
 from codeformer.basicsr.utils.registry import ARCH_REGISTRY
-from codeformer.facelib.utils.face_restoration_helper import FaceRestoreHelper
+from codeformer.facelib.utils.face_restoration_helper import FaceRestoreHelper as CFaceHelper
 from codeformer.inference_codeformer import CodeFormerRestorer
 
 
@@ -97,7 +97,7 @@ class UnAlignedBFRInferenceLoop(InferenceLoop):
         ]:
             os.makedirs(dir_path, exist_ok=True)
 
-        self.face_helper = FaceRestoreHelper(
+        self.face_helper = DiffBIRFaceHelper(
             device=self.args.device,
             upscale_factor=1,
             face_size=512,
@@ -143,23 +143,21 @@ class UnAlignedBFRInferenceLoop(InferenceLoop):
                 yield Image.fromarray(lq_face)
 
             self.loop_ctx["is_face"] = False
+            del self.loop_ctx["cf_face"]
             yield lq
+            
 
     def after_load_lq(self, lq: Image.Image) -> np.ndarray:
         if self.loop_ctx["is_face"]:
             self.pipeline = self.pipeline_dict["face"]
     
             # CodeFormer OUTPUT
-            cf_face = self.codeformer.restore_face(
-                self.loop_ctx["cropped_face"]
-            )
-
-            #conversion 
+            cf_face = self.loop_ctx["cf_face"]
             cf_face = torch.from_numpy(cf_face).float() / 255.0
             cf_face = cf_face.permute(2, 0, 1).unsqueeze(0).to(self.args.device)
-
+            
             self.pipeline.set_cf_image(cf_face)
-    
+
         else:
             self.pipeline = self.pipeline_dict["background"]
             self.pipeline.set_cf_image(None)  # important
@@ -196,7 +194,7 @@ class UnAlignedBFRInferenceLoop(InferenceLoop):
             face_idx = self.loop_ctx["face_idx"]
             # save restored faces
             for i, sample in enumerate(samples):
-                file_name = f"{file_stem}_face_{face_idx}_{i}.png"
+                file_name = f"{file_stem}_face_{face_idx}.png"
                 Image.fromarray(sample).save(
                     os.path.join(self.restored_face_dir, file_name)
                 )
