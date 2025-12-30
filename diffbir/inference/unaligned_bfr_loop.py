@@ -148,14 +148,27 @@ class UnAlignedBFRInferenceLoop(InferenceLoop):
     def after_load_lq(self, lq: Image.Image) -> np.ndarray:
         if self.loop_ctx["is_face"]:
             self.pipeline = self.pipeline_dict["face"]
-            self.pipeline.set_cf_image(self.loop_ctx["cf_face"])
-            
+    
+            # CodeFormer OUTPUT
+            cf_face = self.codeformer.restore_face(
+                self.loop_ctx["cropped_face"]
+            )
+
+            #conversion 
+            cf_face = torch.from_numpy(cf_face).float() / 255.0
+            cf_face = cf_face.permute(2, 0, 1).unsqueeze(0).to(self.args.device)
+
+            self.pipeline.set_cf_image(cf_face)
+    
         else:
             self.pipeline = self.pipeline_dict["background"]
+            self.pipeline.set_cf_image(None)  # important
+        
             if self.bg_requires_upscale:
                 lq = lq.resize(
                     tuple(int(x * self.args.upscale) for x in lq.size), Image.BICUBIC
                 )
+                
         return super().after_load_lq(lq)
 
     def save(self, samples: List[np.ndarray], pos_prompt: str, neg_prompt: str) -> None:
