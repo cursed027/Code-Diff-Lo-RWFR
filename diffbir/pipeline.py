@@ -68,6 +68,9 @@ class Pipeline:
         self, lq: torch.Tensor, tiled: bool, tile_size: int, tile_stride: int
     ) -> torch.Tensor: ...
 
+    def set_cf_image(self, cf_img):
+        self.cf_img = cf_img
+
     def apply_cldm(
         self,
         cond_img: torch.Tensor,
@@ -115,17 +118,21 @@ class Pipeline:
                 raise ValueError("VAE encoder tile size must be a multiple of 8")
         with VRAMPeakMonitor("encoding condition image"):
             cond = self.cldm.prepare_condition(
-                cond_img,
-                [pos_prompt] * bs,
-                vae_encoder_tiled,
-                vae_encoder_tile_size,
+                clean_img=cond_img,
+                cf_img=self.cf_img if hasattr(self, "cf_img") else None,
+                txt=[pos_prompt] * bs,
+                vae_encoder_tiled=vae_encoder_tiled,
+                vae_encoder_tile_size=vae_encoder_tile_size,
             )
+
             uncond = self.cldm.prepare_condition(
-                cond_img,
-                [neg_prompt] * bs,
-                vae_encoder_tiled,
-                vae_encoder_tile_size,
+                clean_img=cond_img,
+                cf_img=self.cf_img if hasattr(self, "cf_img") else None,
+                txt=[neg_prompt] * bs,
+                vae_encoder_tiled=vae_encoder_tiled,
+                vae_encoder_tile_size=vae_encoder_tile_size,
             )
+
         h1, w1 = cond["c_img"].shape[2:]
         # 2. Pad condition latent for U-Net inference (scale factor = 8)
         # 2.1 Check cldm tile size
