@@ -16,6 +16,13 @@ from diffbir.model import ControlLDM, SwinIR, Diffusion
 from diffbir.utils.common import instantiate_from_config, to, log_txt_as_img
 from diffbir.sampler import SpacedSampler
 
+def get_lora_state_dict(model):
+    lora_state = {}
+    for name, param in model.named_parameters():
+        if "lora_" in name:
+            lora_state[name] = param.detach().cpu()
+    return lora_state
+
 
 def main(args) -> None:
     accelerator = Accelerator(split_batches=True)
@@ -41,9 +48,7 @@ def main(args) -> None:
     unused, missing = cldm.load_pretrained_sd(sd)
 
     if accelerator.is_main_process:
-        print(
-            f"Loaded SD weights\nunused: {len(unused)} | missing: {len(missing)}"
-        )
+        print(f"Loaded SD weights | unused: {len(unused)} | missing: {len(missing)}")
 
     if cfg.train.resume:
         # 🔁 Resume LoRA
@@ -182,8 +187,8 @@ def main(args) -> None:
 
             if writer and global_step % cfg.train.ckpt_every == 0:
                 torch.save(
-                    pure_cldm.get_lora_state_dict(),
-                    os.path.join(ckpt_dir, f"lora_{global_step:07d}.pt"),
+                    get_lora_state_dict(pure_cldm),
+                    os.path.join(ckpt_dir, f"lora_{global_step:07d}.pt")
                 )
 
             if global_step >= max_steps:
