@@ -20,8 +20,8 @@ from ..pipeline import (
 from ..model import RRDBNet, SwinIR
 
 #Import CodeFormer
-from codeformer.basicsr.utils.registry import ARCH_REGISTRY
-from codeformer.inference_codeformer import CodeFormerRestorer
+from diffbir.utils.codeformer_wrapper import CodeFormerWrapper
+
 
 
 class UnAlignedBFRInferenceLoop(InferenceLoop):
@@ -104,11 +104,11 @@ class UnAlignedBFRInferenceLoop(InferenceLoop):
             det_model="retinaface_resnet50",
         )
 
-        self.codeformer = CodeFormerRestorer(
-                            device=self.args.device,
-                            fidelity_weight=0.7,   # match your experiments
-                            has_aligned=True       # IMPORTANT: faces are aligned here
-                        )
+        self.codeformer = CodeFormerWrapper(
+                                device=self.args.device,
+                                fidelity_weight=0.7
+                            )
+
 
         self.face_samples = []
 
@@ -134,7 +134,8 @@ class UnAlignedBFRInferenceLoop(InferenceLoop):
                 self.loop_ctx["cropped_face"] = lq_face
             
                 # CodeFormer ON THE FLY
-                cf_face = self.codeformer.restore_face(lq_face)
+                with torch.no_grad():
+                    cf_face = self.codeformer.restore_face(lq_face)
             
                 # store CF for ControlNet
                 self.loop_ctx["cf_face"] = cf_face
