@@ -19,6 +19,11 @@ from ..pipeline import (
 )
 from ..model import RRDBNet, SwinIR
 
+#Import CodeFormer
+from codeformer.basicsr.utils.registry import ARCH_REGISTRY
+from codeformer.facelib.utils.face_restoration_helper import FaceRestoreHelper
+from codeformer.inference_codeformer import CodeFormerRestorer
+
 
 class UnAlignedBFRInferenceLoop(InferenceLoop):
 
@@ -99,6 +104,13 @@ class UnAlignedBFRInferenceLoop(InferenceLoop):
             use_parse=True,
             det_model="retinaface_resnet50",
         )
+
+        self.codeformer = CodeFormerRestorer(
+                            device=self.args.device,
+                            fidelity_weight=0.7,   # match your experiments
+                            has_aligned=True       # IMPORTANT: faces are aligned here
+                        )
+
         self.face_samples = []
 
     def load_lq(self) -> Generator[Image.Image, None, None]:
@@ -121,6 +133,13 @@ class UnAlignedBFRInferenceLoop(InferenceLoop):
                 self.loop_ctx["is_face"] = True
                 self.loop_ctx["face_idx"] = i
                 self.loop_ctx["cropped_face"] = lq_face
+            
+                # CodeFormer ON THE FLY
+                cf_face = self.codeformer.restore_face(lq_face)
+            
+                # store CF for ControlNet
+                self.loop_ctx["cf_face"] = cf_face
+            
                 yield Image.fromarray(lq_face)
 
             self.loop_ctx["is_face"] = False
@@ -129,6 +148,8 @@ class UnAlignedBFRInferenceLoop(InferenceLoop):
     def after_load_lq(self, lq: Image.Image) -> np.ndarray:
         if self.loop_ctx["is_face"]:
             self.pipeline = self.pipeline_dict["face"]
+            self.pipeline.set_cf_image(self.loop_ctx["cf_face"])
+            
         else:
             self.pipeline = self.pipeline_dict["background"]
             if self.bg_requires_upscale:
