@@ -271,7 +271,14 @@ def parse_args() -> Namespace:
     )
     parser.add_argument("--llava_bit", type=str, default="4", choices=["16", "8", "4"])
 
+    #lora arguments
+    parser.add_argument("--lora_path", type=str, default=None)
+    parser.add_argument("--rank_unet", type=int, default=64)
+    parser.add_argument("--rank_controlnet", type=int, default=16)
+
+
     return parser.parse_args()
+    
 
 
 def main():
