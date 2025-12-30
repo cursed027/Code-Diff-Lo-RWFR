@@ -21,7 +21,6 @@ from ..model import RRDBNet, SwinIR
 
 #Import CodeFormer
 from codeformer.basicsr.utils.registry import ARCH_REGISTRY
-from codeformer.facelib.utils.face_restoration_helper import FaceRestoreHelper as CFaceHelper
 from codeformer.inference_codeformer import CodeFormerRestorer
 
 
@@ -143,7 +142,6 @@ class UnAlignedBFRInferenceLoop(InferenceLoop):
                 yield Image.fromarray(lq_face)
 
             self.loop_ctx["is_face"] = False
-            del self.loop_ctx["cf_face"]
             yield lq
             
 
@@ -192,19 +190,21 @@ class UnAlignedBFRInferenceLoop(InferenceLoop):
 
         if self.loop_ctx["is_face"]:
             face_idx = self.loop_ctx["face_idx"]
-            # save restored faces
-            for i, sample in enumerate(samples):
-                file_name = f"{file_stem}_face_{face_idx}.png"
+        
+            file_name = f"{file_stem}_face_{face_idx}.png"
+        
+            for sample in samples:
                 Image.fromarray(sample).save(
                     os.path.join(self.restored_face_dir, file_name)
                 )
-            # save cropped faces (lq)
+        
             cropped_face = self.loop_ctx["cropped_face"]
             Image.fromarray(cropped_face).save(
-                os.path.join(self.cropped_face_dir, file_name) # TODO: file_name is incorrect
+                os.path.join(self.cropped_face_dir, file_name)
             )
-            # waiting for restored background image
+        
             self.face_samples.append(samples)
+
         else:
             self.face_helper.get_inverse_affine()
             # transpose 2D list
