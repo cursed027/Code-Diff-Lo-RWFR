@@ -78,7 +78,22 @@ class InferenceLoop:
             # v2.1
             control_weight = load_model_from_url(MODELS["v2.1"])
         self.cldm.load_controlnet_from_ckpt(control_weight)
-        print(f"load controlnet weight")
+        
+        # ---- BLOCK (LoRA) ----
+        if self.args.lora_path is not None:
+            print(f"[INFO] Loading LoRA from {self.args.lora_path}")
+        
+            # Inject LoRA structure (must match training!)
+            self.cldm.inject_lora(
+                rank_unet=self.args.rank_unet,
+                rank_controlnet=self.args.rank_controlnet,
+            )
+        
+            # Load trained LoRA weights
+            lora_sd = torch.load(self.args.lora_path, map_location="cpu")
+            self.cldm.load_lora(lora_sd)
+            
+        print(f"load controlnet+LoRA weight")
         self.cldm.eval().to(self.args.device)
         cast_type = {
             "fp32": torch.float32,
