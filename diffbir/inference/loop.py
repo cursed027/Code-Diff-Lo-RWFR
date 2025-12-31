@@ -91,6 +91,13 @@ class InferenceLoop:
         if self.args.lora_path is not None:
 
             print(f"[INFO] Loading LoRA from {self.args.lora_path}")
+
+            print(
+                f"[DEBUG] Injecting LoRA with ranks: "
+                f"UNet={self.args.rank_unet}, "
+                f"ControlNet={self.args.rank_controlnet}"
+            )
+
         
             # Inject LoRA structure (must match training!)
             self.cldm.inject_lora(
