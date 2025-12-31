@@ -1,9 +1,9 @@
 import torch
 import numpy as np
 from torchvision.transforms.functional import normalize
-from basicsr.utils import img2tensor, tensor2img
-from basicsr.utils.download_util import load_file_from_url
-from basicsr.utils.registry import ARCH_REGISTRY
+from .codeformer.basicsr.utils import img2tensor, tensor2img
+from .codeformer.basicsr.utils.download_util import load_file_from_url
+from .codeformer.basicsr.utils.registry import ARCH_REGISTRY
 
 
 class CodeFormerWrapper:
