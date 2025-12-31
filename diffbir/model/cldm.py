@@ -238,3 +238,14 @@ class ControlLDM(nn.Module):
         print("Injecting LoRA into ControlNet...")
         replace_linear(self.controlnet, rank_controlnet)
 
+    def load_lora(self, lora_sd: dict):
+        """
+        Load LoRA weights into UNet and ControlNet.
+        Assumes LoRA layers were already injected.
+        """
+        missing, unexpected = self.load_state_dict(lora_sd, strict=False)
+
+        print("[LoRA] Missing keys:", missing)
+        print("[LoRA] Unexpected keys:", unexpected)
+
+
