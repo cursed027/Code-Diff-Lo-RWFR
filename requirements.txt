@@ -1,16 +1,31 @@
-# torch, torchvision, torchaudio installed separately
-# xformers installed separately
-#!pip uninstall -y torch torchvision torchaudio
-#!pip install torch==2.2.2+cu118 torchvision==0.17.2+cu118 torchaudio==2.2.2+cu118 --extra-index-url #https://download.pytorch.org/whl/cu118
-#!pip install xformers==0.0.27.post2 --no-deps
-
+# ===============================
+# CORE NUMERICS (PINNED)
+# ===============================
 numpy==1.26.4
+scipy==1.12.0
+opencv-python==4.9.0.80
+Pillow>=9.5.0,<11
 
+# ===============================
+# PYTORCH (INSTALL MANUALLY)
+# ===============================
+# Uncomment ONLY on modern CUDA GPUs (Ampere+)
+# !pip uninstall -y torch torchvision torchaudio
+# !pip install torch==2.2.2+cu118 torchvision==0.17.2+cu118 torchaudio==2.2.2+cu118 \
+#     --extra-index-url https://download.pytorch.org/whl/cu118
+#
+# !pip install xformers==0.0.27.post2 --no-deps
+#
+# On Pascal GPUs:
+#   → use system torch
+#   → DO NOT install xformers
+
+# ===============================
+# DIFFBIR + LORA
+# ===============================
 omegaconf==2.3.0
 accelerate==0.28.0
 einops==0.7.0
-opencv_python==4.9.0.80
-scipy==1.12.0
 ftfy==6.2.0
 regex==2023.12.25
 python-dateutil==2.9.0.post0
@@ -30,3 +45,22 @@ transformers==4.37.2
 tokenizers==0.15.1
 sentencepiece==0.1.99
 fairscale==0.4.4
+
+# ===============================
+# CODEFORMER + BASICSR
+# ===============================
+addict
+future
+lmdb
+pyyaml
+requests
+scikit-image
+tb-nightly
+tqdm
+yapf
+gdown
+
+# ===============================
+# BASICSR (AUTO-REGISTER)
+# ===============================
+basicsr==1.4.2
