@@ -144,33 +144,46 @@ class ControlLDM(nn.Module):
         return decoder(z / self.scale_factor)
 
     def prepare_condition(
-    self,
-    clean_img: torch.Tensor,
-    cf_img: torch.Tensor,
-    txt: List[str],
-    tiled: bool = False,
-    tile_size: int = -1,
+        self,
+        clean_img: torch.Tensor,
+        cf_img: torch.Tensor,
+        txt: List[str],
+        vae_encoder_tiled: bool = False,
+        vae_encoder_tile_size: int = -1,
     ):
+        # Encode clean image
         clean_latent = self.vae_encode(
             clean_img * 2 - 1,
             sample=False,
-            tiled=tiled,
-            tile_size=tile_size,
+            tiled=vae_encoder_tiled,
+            tile_size=vae_encoder_tile_size,
         )
 
-        cf_latent = self.vae_encode(
-            cf_img * 2 - 1,
-            sample=False,
-            tiled=tiled,
-            tile_size=tile_size,
-        )
+        if cf_img is None:
+            print("[DEBUG] CodeFormer image is None → zero-gated")
+        else:
+            print("[DEBUG] CodeFormer image USED")
 
-        c_img = torch.cat([clean_latent, cf_latent], dim=1)  # [B, 8, H, W]
-
+    
+        # If CodeFormer image is missing, use zeros
+        if cf_img is None:
+            cf_latent = torch.zeros_like(clean_latent)
+        else:
+            cf_latent = self.vae_encode(
+                cf_img * 2 - 1,
+                sample=False,
+                tiled=vae_encoder_tiled,
+                tile_size=vae_encoder_tile_size,
+            )
+    
+        # Concatenate latents: [4 + 4 = 8 channels]
+        c_img = torch.cat([clean_latent, cf_latent], dim=1)
+    
         return dict(
             c_txt=self.clip.encode(txt),
             c_img=c_img,
         )
+
 
     def forward(self, x_noisy, t, cond):
         c_txt = cond["c_txt"]
@@ -247,5 +260,3 @@ class ControlLDM(nn.Module):
 
         print("[LoRA] Missing keys:", missing)
         print("[LoRA] Unexpected keys:", unexpected)
-
-
