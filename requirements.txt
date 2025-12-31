@@ -45,6 +45,7 @@ transformers==4.37.2
 tokenizers==0.15.1
 sentencepiece==0.1.99
 fairscale==0.4.4
+safetensors>=0.4.2
 
 # ===============================
 # CODEFORMER + BASICSR
