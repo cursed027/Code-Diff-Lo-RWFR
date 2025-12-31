@@ -126,6 +126,8 @@ class UnAlignedBFRInferenceLoop(InferenceLoop):
 
             self.face_helper.get_face_landmarks_5(resize=640, eye_dist_threshold=5)
             self.face_helper.align_warp_face()
+            if len(self.face_helper.cropped_faces) > 0:
+                print(self.face_helper.cropped_faces[0].shape)
             print(f"detect {len(self.face_helper.cropped_faces)} faces")
 
             for i, lq_face in enumerate(self.face_helper.cropped_faces):
@@ -143,6 +145,8 @@ class UnAlignedBFRInferenceLoop(InferenceLoop):
                 yield Image.fromarray(lq_face)
 
             self.loop_ctx["is_face"] = False
+            self.loop_ctx.pop("cf_face", None)
+            
             yield lq
             
 
