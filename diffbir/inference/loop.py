@@ -73,15 +73,28 @@ class InferenceLoop:
                     f"DiffBIR v1 doesn't support task: {self.args.task}, "
                     f"please use v2 or v2.1 by passsing '--version'"
                 )
+
         elif self.args.version == "v2":
             control_weight = load_model_from_url(MODELS["v2"])
+            
         else:
             # v2.1
             control_weight = load_model_from_url(MODELS["v2.1"])
-        self.cldm.load_controlnet_from_ckpt(control_weight)
-        
+
+        # --- FIX: initialize ControlNet correctly for extended hint channels ---
+        # Step 1: initialize ControlNet from UNet (zero-init extra hint channels)
+        self.cldm.load_controlnet_from_unet()
+
+        # Step 2: load ControlNet checkpoint non-strictly
+        missing, unexpected = self.cldm.controlnet.load_state_dict(
+            control_weight, strict=False
+        )
+        print("ControlNet missing keys:", missing)
+        print("ControlNet unexpected keys:", unexpected)
+
         # ---- BLOCK (LoRA) ----
         if self.args.lora_path is not None:
+
             print(f"[INFO] Loading LoRA from {self.args.lora_path}")
         
             # Inject LoRA structure (must match training!)
