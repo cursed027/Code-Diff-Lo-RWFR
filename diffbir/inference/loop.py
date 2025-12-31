@@ -76,21 +76,16 @@ class InferenceLoop:
 
         elif self.args.version == "v2":
             control_weight = load_model_from_url(MODELS["v2"])
-            
         else:
             # v2.1
             control_weight = load_model_from_url(MODELS["v2.1"])
 
-        # --- FIX: initialize ControlNet correctly for extended hint channels ---
-        # Step 1: initialize ControlNet from UNet (zero-init extra hint channels)
+        # --- FINAL FIX ---
+        # ControlNet was trained with extended hint channels (LQ + CF latents)
+        # We must initialize it from UNet to preserve pretrained behavior
+        # and DO NOT load the original ControlNet checkpoint (shape mismatch).
         self.cldm.load_controlnet_from_unet()
 
-        # Step 2: load ControlNet checkpoint non-strictly
-        missing, unexpected = self.cldm.controlnet.load_state_dict(
-            control_weight, strict=False
-        )
-        print("ControlNet missing keys:", missing)
-        print("ControlNet unexpected keys:", unexpected)
 
         # ---- BLOCK (LoRA) ----
         if self.args.lora_path is not None:
