@@ -112,11 +112,28 @@ def load_file_from_url(url, model_dir=None, progress=True, file_name=None):
 
 def load_model_from_url(url: str) -> Dict[str, torch.Tensor]:
     sd_path = load_file_from_url(url, model_dir="weights")
-    sd = torch.load(sd_path, map_location="cpu", weights_only=False)
-    if "state_dict" in sd:
-        sd = sd["state_dict"]
-    if list(sd.keys())[0].startswith("module"):
+
+    # -------------------------------
+    # Case 1: SafeTensors (SD 2.1 HF)
+    # -------------------------------
+    if sd_path.endswith(".safetensors"):
+        from safetensors.torch import load_file
+        sd = load_file(sd_path)
+
+    # -------------------------------
+    # Case 2: PyTorch ckpt / pth
+    # -------------------------------
+    else:
+        sd = torch.load(sd_path, map_location="cpu", weights_only=False)
+        if isinstance(sd, dict) and "state_dict" in sd:
+            sd = sd["state_dict"]
+
+    # -------------------------------
+    # Cleanup: remove DataParallel prefix
+    # -------------------------------
+    if list(sd.keys())[0].startswith("module."):
         sd = {k[len("module.") :]: v for k, v in sd.items()}
+
     return sd
 
 
