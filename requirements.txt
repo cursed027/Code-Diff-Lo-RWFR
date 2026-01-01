@@ -1,12 +1,4 @@
 # ===============================
-# CORE NUMERICS (PINNED)
-# ===============================
-numpy==1.26.4
-scipy==1.12.0
-opencv-python==4.9.0.80
-Pillow>=9.5.0,<11
-
-# ===============================
 # PYTORCH (INSTALL MANUALLY)
 # ===============================
 # Uncomment ONLY on modern CUDA GPUs (Ampere+)
@@ -20,8 +12,18 @@ Pillow>=9.5.0,<11
 #   → use system torch
 #   → DO NOT install xformers
 
+
 # ===============================
-# DIFFBIR + LORA
+# CORE NUMERICS
+# ===============================
+numpy==1.26.4
+scipy==1.12.0
+opencv-python==4.9.0.80
+Pillow>=9.5.0,<11
+scikit-image
+
+# ===============================
+# DIFFUSION / DIFFBIR
 # ===============================
 omegaconf==2.3.0
 accelerate==0.28.0
@@ -31,7 +33,6 @@ regex==2023.12.25
 python-dateutil==2.9.0.post0
 timm==0.9.16
 
-pytorch-lightning==2.2.1
 tensorboard==2.16.2
 protobuf==4.25.3
 lpips==0.1.4
@@ -48,16 +49,20 @@ fairscale==0.4.4
 safetensors>=0.4.2
 
 # ===============================
-# CODEFORMER + BASICSR
+# CODEFORMER / BASICSR
 # ===============================
 addict
 future
 lmdb
 pyyaml
 requests
-scikit-image
 tb-nightly
 tqdm
 yapf
 gdown
+
+# ===============================
+# ADAFACE (INFERENCE ONLY)
+# ===============================
+prettytable
 
