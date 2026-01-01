@@ -159,7 +159,7 @@ def main(args) -> None:
 
     global_step = 0
     max_steps = cfg.train.train_steps
-    noise_aug_timestep = cfg.train.noise_aug_timestep
+    #noise_aug_timestep = cfg.train.noise_aug_timestep
     
     step_loss, epoch_loss = [], []
     step_diff, step_l1, step_lpips, step_id = [], [], [], []
@@ -191,15 +191,26 @@ def main(args) -> None:
                     clean_img=clean, cf_img=cf, txt=prompt
                 )
 
+                # ----------------------------
+                # Curriculum noise augmentation
+                # ----------------------------
+                if global_step < 3000:
+                    noise_t = 30
+                elif global_step < 6000:
+                    noise_t = 60
+                else:
+                    noise_t = 100
+                
                 cond_aug = copy.deepcopy(cond)
-                if noise_aug_timestep > 0:
+                if noise_t > 0:
                     cond_aug["c_img"] = diffusion.q_sample(
                         cond_aug["c_img"],
                         torch.randint(
-                            0, noise_aug_timestep, (z0.size(0),), device=device
+                            0, noise_t, (z0.size(0),), device=device
                         ),
                         torch.randn_like(cond_aug["c_img"]),
                     )
+
 
             t = torch.randint(0, diffusion.num_timesteps, (z0.size(0),), device=device)
 
