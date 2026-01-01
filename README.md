@@ -35,7 +35,7 @@ Clone the official AdaFace repository **next to this repo**:
 git clone https://github.com/mk-minchul/AdaFace.git
 ```
 
-Install Dependencies
+Install Dependencies **(SKIP ALREADY INCLUDED IN MAIN REQ.TXT OF THIS REPO!!)**
 ```bash 
 pip install prettytable opencv-python
 ```
