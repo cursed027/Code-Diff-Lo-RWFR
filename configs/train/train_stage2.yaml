@@ -114,7 +114,7 @@ train:
   # stage 1 swinir path.
   # In our paper, we use SwinIR trained on ImageNet-1k with codeformer degradation.
   swinir_path: 
-  learning_rate: 1e-4
+  #learning_rate: 1e-4
   # ImageNet 1k (1.3M images)
   # batch size = 192, lr = 1e-4, total training steps = 25k
   # Our filtered laion2b-en (15M images)
@@ -131,5 +131,13 @@ train:
   lora_rank_controlnet: 16
   lr_unet: 1e-4
   lr_controlnet: 5e-5
+  # -----------------------------
+  # Gated auxiliary losses
+  # -----------------------------
+  t_id_gate: 300        # timestep threshold for ID / LPIPS / L1
+  lambda_l1: 1.0
+  lambda_lpips: 0.5
+  lambda_adaface: 1.0
+
 
 
