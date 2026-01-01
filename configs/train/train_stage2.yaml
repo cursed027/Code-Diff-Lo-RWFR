@@ -119,22 +119,35 @@ train:
   # batch size = 192, lr = 1e-4, total training steps = 25k
   # Our filtered laion2b-en (15M images)
   # batch size = 256, lr = 1e-4 (first 30k), 1e-5 (next 50k), total training steps = 80k
-  batch_size: 1
-  num_workers: 4 
-  train_steps: 8000
-  log_every: 100
-  ckpt_every: 1000
-  image_every: 9999999
+  
   resume: ~
-  noise_aug_timestep: 0
-  lora_rank_unet: 64
-  lora_rank_controlnet: 16
+
+  batch_size: 1
+  num_workers: 4
+
+  # -------- TRAIN LENGTH --------
+  # Allow full dataset coverage + margin
+  train_steps: 60000
+
+  # -------- LOGGING / CHECKPOINTS --------
+  log_every: 100
+  ckpt_every: 2000
+  image_every: 9999999   # no image logging during training
+
+  # -------- OPTIMIZER (CONSTANT LR) --------
   lr_unet: 1e-4
   lr_controlnet: 5e-5
-  # -----------------------------
-  # Gated auxiliary losses
-  # -----------------------------
-  t_id_gate: 300        # timestep threshold for ID / LPIPS / L1
+
+  # -------- LoRA --------
+  lora_rank_unet: 64
+  lora_rank_controlnet: 16
+
+  # -------- NOISE --------
+  # handled by curriculum in code
+  noise_aug_timestep: 0
+
+  # -------- GATED LOSSES --------
+  t_id_gate: 300
   lambda_l1: 1.0
   lambda_lpips: 0.5
   lambda_adaface: 1.0
