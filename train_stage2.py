@@ -16,6 +16,14 @@ from diffbir.model import ControlLDM, SwinIR, Diffusion
 from diffbir.utils.common import instantiate_from_config, to, log_txt_as_img
 from diffbir.sampler import SpacedSampler
 
+import torch.nn.functional as F
+import lpips
+import sys, os
+
+sys.path.append(os.path.abspath("AdaFace"))
+from AdaFace.net import build_model
+
+
 def get_lora_state_dict(model):
     lora_state = {}
     for name, param in model.named_parameters():
@@ -79,6 +87,26 @@ def main(args) -> None:
         p.requires_grad = False
 
     diffusion: Diffusion = instantiate_from_config(cfg.model.diffusion)
+    
+    # ----------------------------
+    # Auxiliary losses (frozen)
+    # ----------------------------
+    lpips_loss = lpips.LPIPS(net="vgg").to(device)
+    lpips_loss.eval()
+    for p in lpips_loss.parameters():
+        p.requires_grad = False
+    
+    adaface = build_model("ir_50").to(device)
+    adaface.eval()
+    for p in adaface.parameters():
+        p.requires_grad = False
+    
+    # Timestep gate and weights
+    T_ID = cfg.train.get("t_id_gate", 300)
+    lambda_l1 = cfg.train.get("lambda_l1", 1.0)
+    lambda_lpips = cfg.train.get("lambda_lpips", 0.5)
+    lambda_id = cfg.train.get("lambda_adaface", 1.0)
+
 
     # ----------------------------
     # Optimizer (LoRA only)
@@ -132,7 +160,10 @@ def main(args) -> None:
     global_step = 0
     max_steps = cfg.train.train_steps
     noise_aug_timestep = cfg.train.noise_aug_timestep
+    
     step_loss, epoch_loss = [], []
+    step_diff, step_l1, step_lpips, step_id = [], [], [], []
+
 
     # ----------------------------
     # Training loop
@@ -154,10 +185,12 @@ def main(args) -> None:
 
             with torch.no_grad():
                 z0 = pure_cldm.vae_encode(gt)
+                gt_decoded = pure_cldm.vae_decode(z0)  # decode GT once
                 clean = swinir(lq)
                 cond = pure_cldm.prepare_condition(
                     clean_img=clean, cf_img=cf, txt=prompt
                 )
+
                 cond_aug = copy.deepcopy(cond)
                 if noise_aug_timestep > 0:
                     cond_aug["c_img"] = diffusion.q_sample(
@@ -169,8 +202,48 @@ def main(args) -> None:
                     )
 
             t = torch.randint(0, diffusion.num_timesteps, (z0.size(0),), device=device)
-            loss = diffusion.p_losses(cldm, z0, t, cond_aug)
 
+            # Diffusion loss (always on)
+            loss_diff = diffusion.p_losses(cldm, z0, t, cond_aug)
+            loss = loss_diff
+            step_diff.append(loss_diff.item())
+
+            
+            # Auxiliary losses (only at low noise)
+            if t.min() < T_ID:
+                with torch.no_grad():
+                    pred = diffusion.p_mean_variance(
+                        cldm, z0, t, cond_aug, clip_denoised=False
+                    )
+                    x0_pred = pred["pred_xstart"]
+            
+                img_pred = pure_cldm.vae_decode(x0_pred)
+            
+                # Resize for AdaFace
+                img_pred_112 = F.interpolate(img_pred, size=112, mode="bilinear", align_corners=False)
+                gt_112 = F.interpolate(gt_decoded, size=112, mode="bilinear", align_corners=False)
+            
+                # L1 + LPIPS
+                l1 = F.l1_loss(img_pred, gt_decoded)
+                lp = lpips_loss(img_pred, gt_decoded).mean()
+            
+                # AdaFace identity loss
+                feat_p, _ = adaface(img_pred_112)
+                feat_g, _ = adaface(gt_112)
+                feat_p = F.normalize(feat_p, dim=1)
+                feat_g = F.normalize(feat_g, dim=1)
+                id_loss = 1.0 - (feat_p * feat_g).sum(dim=1).mean()
+
+                step_l1.append(l1.item())
+                step_lpips.append(lp.item())
+                step_id.append(id_loss.item())
+
+                loss = loss + (
+                    lambda_l1 * l1 +
+                    lambda_lpips * lp +
+                    lambda_id * id_loss
+                )
+            
             opt.zero_grad()
             accelerator.backward(loss)
             opt.step()
@@ -179,11 +252,34 @@ def main(args) -> None:
             step_loss.append(loss.item())
             epoch_loss.append(loss.item())
 
-            pbar.set_description(f"step={global_step} loss={loss.item():.4f}")
+            if step_l1:
+                pbar.set_description(
+                    f"step={global_step} "
+                    f"diff={loss_diff.item():.3f} "
+                    f"l1={l1.item():.3f} "
+                    f"lp={lp.item():.3f} "
+                    f"id={id_loss.item():.3f}"
+                )
+            else:
+                pbar.set_description(
+                    f"step={global_step} diff={loss_diff.item():.3f}"
+                )
+
 
             if writer and global_step % cfg.train.log_every == 0:
-                writer.add_scalar("loss/step", sum(step_loss) / len(step_loss), global_step)
+                writer.add_scalar("loss/total", sum(step_loss) / len(step_loss), global_step)
+                writer.add_scalar("loss/diffusion", sum(step_diff) / len(step_diff), global_step)
+            
+                if step_l1:
+                    writer.add_scalar("loss/l1", sum(step_l1) / len(step_l1), global_step)
+                    writer.add_scalar("loss/lpips", sum(step_lpips) / len(step_lpips), global_step)
+                    writer.add_scalar("loss/adaface", sum(step_id) / len(step_id), global_step)
+            
                 step_loss.clear()
+                step_diff.clear()
+                step_l1.clear()
+                step_lpips.clear()
+                step_id.clear()
 
             if writer and global_step % cfg.train.ckpt_every == 0:
                 torch.save(
