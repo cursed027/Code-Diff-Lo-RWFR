@@ -18,11 +18,20 @@ from diffbir.sampler import SpacedSampler
 
 import torch.nn.functional as F
 import lpips
+
 import sys, os
 
-sys.path.append(os.path.abspath("AdaFace"))
-from AdaFace.net import build_model
+PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+ADAFACE_DIR = os.path.join(PROJECT_ROOT, "AdaFace")
 
+if not os.path.isdir(ADAFACE_DIR):
+    raise RuntimeError(
+        f"AdaFace directory not found at {ADAFACE_DIR}. "
+        "Please ensure AdaFace is cloned inside the repository."
+    )
+
+sys.path.insert(0, ADAFACE_DIR)
+from AdaFace.net import build_model
 
 def get_lora_state_dict(model):
     lora_state = {}
