@@ -15,33 +15,6 @@ The project supports:
 * **Stage-2 fine-tuning** (LoRA training),
 * **Inference on unaligned images** with CodeFormer-guided Diffusion.
 
----
-
-## 🔐 AdaFace (Identity Loss Dependency)
-
-This project optionally uses **AdaFace** as an **identity embedding network**
-during **CHECKPOINT SELECTION only**.
-
-AdaFace is **NOT vendored** into this repository by design.
-
----
-
-### 📥 Install AdaFace (One-Time)
-
-Clone the official AdaFace repository **inside in this repo**:
-
-```bash
-cd dir/Code-Diff-Lo-RWFR
-git clone https://github.com/mk-minchul/AdaFace.git
-```
-
-Install Dependencies **(SKIP ALREADY INCLUDED IN MAIN REQ.TXT OF THIS REPO!!)**
-
-
-⚠️ Do NOT install AdaFace’s original PyTorch or Lightning requirements.
-This project uses modern PyTorch (2.x) and only requires AdaFace
-for forward embedding inference, not training.
-
 ## 📌 Overview of the Pipeline
 
 **Inference flow (Unaligned BFR):**
@@ -217,7 +190,32 @@ Directory layout:
 ├── Code-Diff-Lo-RWFR
 └── CodeFormer
 ```
+---
 
+## 🔐 AdaFace (Identity Loss Dependency)
+
+This project optionally uses **AdaFace** as an **identity embedding network**
+during **CHECKPOINT SELECTION only**.
+
+AdaFace is **NOT vendored** into this repository by design.
+
+---
+
+### 📥 Install AdaFace (One-Time)
+
+Clone the official AdaFace repository **inside in this repo**:
+
+```bash
+cd dir/Code-Diff-Lo-RWFR
+git clone https://github.com/mk-minchul/AdaFace.git
+```
+
+Install Dependencies **(SKIP ALREADY INCLUDED IN MAIN REQ.TXT OF THIS REPO!!)**
+
+
+⚠️ Do NOT install AdaFace’s original PyTorch or Lightning requirements.
+This project uses modern PyTorch (2.x) and only requires AdaFace
+for forward embedding inference, not training.
 ---
 
 #### 2️⃣ Install dependencies
