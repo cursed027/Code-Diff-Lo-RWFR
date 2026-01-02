@@ -275,24 +275,25 @@ python inference.py \
   --device cuda
 ```
 
-🏆 Checkpoint Selection (NTIRE-Style)
+### 🏆 Checkpoint Selection (NTIRE-Style)
 
 After running inference for multiple LoRA checkpoints:
 
-python diffbir/inference/select_best_lora.py
-
+```bash
+    python diffbir/inference/select_best_lora.py
+```
 
 The script:
 
-Computes CLIP-IQA, MANIQA, MUSIQ, NIQE
+- Computes CLIP-IQA, MANIQA, MUSIQ, NIQE
 
-Applies AdaFace identity gating
+- Applies AdaFace identity gating
 
-Ranks checkpoints using NTIRE weighted score
+- Ranks checkpoints using NTIRE weighted score
 
 Output:
 
-🏆 BEST CHECKPOINT: lora_0000200
+    🏆 BEST CHECKPOINT: lora_0000200
 
 ---
 
