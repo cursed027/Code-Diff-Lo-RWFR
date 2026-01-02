@@ -20,25 +20,23 @@ The project supports:
 ## 🔐 AdaFace (Identity Loss Dependency)
 
 This project optionally uses **AdaFace** as an **identity embedding network**
-during **Stage-2 LoRA training only**.
+during **CHECKPOINT SELECTION only**.
 
-AdaFace is **NOT** used during inference and is **NOT vendored**
-into this repository by design.
+AdaFace is **NOT vendored** into this repository by design.
 
 ---
 
 ### 📥 Install AdaFace (One-Time)
 
-Clone the official AdaFace repository **next to this repo**:
+Clone the official AdaFace repository **inside in this repo**:
 
 ```bash
+cd dir/Code-Diff-Lo-RWFR
 git clone https://github.com/mk-minchul/AdaFace.git
 ```
 
 Install Dependencies **(SKIP ALREADY INCLUDED IN MAIN REQ.TXT OF THIS REPO!!)**
-```bash 
-pip install prettytable opencv-python
-```
+
 
 ⚠️ Do NOT install AdaFace’s original PyTorch or Lightning requirements.
 This project uses modern PyTorch (2.x) and only requires AdaFace
@@ -276,6 +274,25 @@ python inference.py \
   --precision fp32 \
   --device cuda
 ```
+
+🏆 Checkpoint Selection (NTIRE-Style)
+
+After running inference for multiple LoRA checkpoints:
+
+python diffbir/inference/select_best_lora.py
+
+
+The script:
+
+Computes CLIP-IQA, MANIQA, MUSIQ, NIQE
+
+Applies AdaFace identity gating
+
+Ranks checkpoints using NTIRE weighted score
+
+Output:
+
+🏆 BEST CHECKPOINT: lora_0000200
 
 ---
 
